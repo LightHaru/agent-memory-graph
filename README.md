@@ -1,224 +1,341 @@
-# Memory Graph Plugin v0.21.0
+# 🧠 Agent Memory Graph
 
-Production-grade knowledge graph with conversation context injection for OpenClaw.
+> **Turn your AI agent's conversations into a living knowledge graph**
 
-## Features
+[![Version](https://img.shields.io/badge/version-0.21.0-blue.svg)](https://github.com/LightHaru/agent-memory-graph)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-%E2%89%A52026.3.24-orange.svg)](https://openclaw.ai)
 
-### 🎯 Core Capabilities
+## ✨ What is this?
 
-- **Conversation Window Buffer** - Inject last 10 messages into context before response
-- **Hybrid Search** - Combine keyword (40%) + semantic (60%) search with multilingual-e5-large
-- **Smart Entity Extraction** - Auto-detect URLs, prices, decisions, dates, mentions, hashtags
-- **Context Priority System** - conversation > semantic > graph > working memory
-- **Temporal Relationships** - Track fact changes over time (Graphiti-inspired)
-- **Graph Traversal** - Find shortest paths between entities (BFS, max 3 hops)
+**Agent Memory Graph** is an OpenClaw plugin that automatically builds a **searchable knowledge graph** from your AI conversations. No manual tagging, no complex setup — just install and watch your agent remember **everything**.
 
-### 🚀 What's New in v0.21.0
+Every message your agent sees is analyzed for:
+- 👤 **Entities** (people, projects, tools, locations, events...)
+- 🔗 **Relationships** (who works on what, what connects to what...)
+- 📊 **Properties** (versions, dates, statuses, descriptions...)
 
-- **Multilingual E5-Large** - Upgraded from bge-small-en (384d) to multilingual-e5-large (1024d)
-- **Conversation Context Injection** - Automatic context injection before each response
-- **Smart Entity Extraction** - Auto-extract entities from conversations
-- **Production-Ready** - Full test suite, TypeScript, proper error handling
-- **Backward Compatible** - Migrates from v0.20.0 seamlessly
+All stored in a **local SQLite database** with **semantic search** and **graph traversal** — giving your agent true long-term memory.
 
-## Installation
+---
+
+## 🎯 Why you need this
+
+**Before Agent Memory Graph:**
+- ❌ Your agent forgets everything after the conversation ends
+- ❌ You have to repeat context every time
+- ❌ No way to query "Who worked on what?" or "What's related to X?"
+- ❌ Knowledge scattered across chat logs
+
+**After Agent Memory Graph:**
+- ✅ **Auto-extracts entities** from every conversation (URLs, people, projects, prices...)
+- ✅ **Builds relationships** between entities automatically
+- ✅ **Hybrid search** (keyword 40% + semantic 60%) finds what you need
+- ✅ **Conversation context** (10 messages buffer) for accurate extraction
+- ✅ **Natural language queries** like "What did Aira upgrade today?"
+- ✅ **Graph traversal** to find how things connect
+
+---
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
-cd ~/.openclaw/plugins/memory-graph
-npm install
-npm run build
-npm test
+# Install from npm
+npm install agent-memory-graph
+
+# Or install from GitHub
+npm install https://github.com/LightHaru/agent-memory-graph
 ```
 
-## Quick Start
+### OpenClaw Configuration
+
+Add to your `openclaw.json`:
+
+```json
+{
+  "plugins": {
+    "allow": ["memory-graph"],
+    "entries": {
+      "memory-graph": {
+        "enabled": true,
+        "hooks": {
+          "allowConversationAccess": true
+        },
+        "config": {
+          "dbPath": "~/.openclaw/data/memory-graph.db",
+          "autoIngest": true,
+          "sessionSummary": true,
+          "minConfidence": 0.7,
+          "maxHops": 3
+        }
+      }
+    }
+  }
+}
+```
+
+### Usage
+
+Once installed, the plugin works **automatically** — no code changes needed!
+
+**Manual extraction:**
+```typescript
+// Extract entities from text
+memory_graph_ingest({
+  text: "Aira upgraded memory-graph to v0.21.0 using multilingual-e5-large model",
+  source: "manual-entry"
+})
+```
+
+**Search entities:**
+```typescript
+// Keyword + semantic hybrid search
+memory_graph_search({
+  query: "memory graph plugin",
+  limit: 10
+})
+```
+
+**Natural language queries:**
+```typescript
+// Ask questions in plain English
+memory_graph_query({
+  question: "What projects is Aira working on?"
+})
+```
+
+**Find connections:**
+```typescript
+// Shortest path between two entities
+memory_graph_path({
+  from: "Aira",
+  to: "OpenClaw",
+  maxHops: 3
+})
+```
+
+---
+
+## 🎨 Features
+
+### 🔄 Conversation Context Buffer
+Sees **10 previous messages** when extracting entities — understands pronouns, references, and context like a human.
+
+**Before (v0.19):**
+```
+User: "Fix that bug"
+Plugin: ❌ No idea what "that" refers to
+```
+
+**After (v0.21):**
+```
+User: "The memory plugin has a bug"
+User: "Fix that bug"
+Plugin: ✅ Extracts: memory plugin -[HAS_ISSUE]-> bug
+```
+
+### 🔍 Hybrid Search
+Combines **keyword matching** (40%) and **semantic similarity** (60%) — finds what you mean, not just what you say.
 
 ```typescript
-import { MemoryGraphPlugin } from '@openclaw/plugin-memory-graph';
-
-// Initialize plugin
-const plugin = new MemoryGraphPlugin({
-  dbPath: '~/.openclaw/memory-graph.db',
-  conversationWindowSize: 10,
-  enableAutoExtraction: true
-});
-
-await plugin.initialize();
-
-// Add conversation messages (auto-extracts entities)
-await plugin.addConversationMessage({
-  role: 'user',
-  content: 'What is Pearl OTC? https://pearl.exchange/otc',
-  timestamp: Date.now()
-});
-
-// Inject context for next response
-const context = await plugin.injectContext('Pearl OTC rates');
-console.log(context.conversationWindow); // Last 10 messages
-console.log(context.relevantEntities);   // Semantic search results
-console.log(context.priority);           // 'conversation'
+Query: "AI coding assistant"
+Results:
+  ✅ Claude Code (keyword match)
+  ✅ Codex (semantic: similar concept)
+  ✅ Cursor (semantic: IDE integration)
 ```
 
-## Usage Examples
+### 🌍 Multilingual Embedding
+Upgraded from `bge-small-en-v1.5` (384d) → **`multilingual-e5-large` (1024d)**
 
-### Pearl OTC Scenario
+- ✅ Better English understanding
+- ✅ **Vietnamese support** (Tiếng Việt)
+- ✅ Higher quality semantic vectors
+- ✅ More accurate entity relationships
+
+### 🤖 Auto-Extraction
+Automatically detects and extracts:
+- 🔗 URLs and links
+- 💰 Prices and financial data
+- 📧 @mentions and handles
+- 📅 Dates and timestamps
+- 🏷️ Hashtags and tags
+
+### 📊 Rich Entity Properties
+Every entity can have custom properties:
+
+```json
+{
+  "entity": "memory-graph",
+  "type": "Tool",
+  "properties": {
+    "version": "0.21.0",
+    "status": "ready",
+    "embedding_model": "multilingual-e5-large",
+    "release_date": "2026-06-02"
+  }
+}
+```
+
+---
+
+## 📖 Use Cases
+
+### 🧑‍💻 Developer Agent Memory
+Track what you've worked on, what bugs you fixed, what libraries you used:
 
 ```typescript
-// User asks about Pearl OTC
-await plugin.addConversationMessage({
-  role: 'user',
-  content: 'What is Pearl OTC and where can I find it?',
-  timestamp: Date.now()
-});
+memory_graph_query({
+  question: "What bugs did I fix in the last week?"
+})
 
-// Assistant responds with URL
-await plugin.addConversationMessage({
-  role: 'assistant',
-  content: 'Pearl OTC is at https://pearl.exchange/otc - competitive rates for large trades.',
-  timestamp: Date.now()
-});
-
-// Later: inject context for follow-up
-const context = await plugin.injectContext('Pearl rates');
-// context.conversationWindow contains both messages
-// context.relevantEntities contains extracted URL entity
-// context.priority = 'conversation' (highest priority)
+// Returns:
+// - Fixed ENOENT bug in skill-creator
+// - Resolved memory leak in agent-brain
+// - Patched authentication issue in gateway
 ```
 
-### Hybrid Search
+### 🤝 Team Collaboration
+Remember who worked on what project:
 
 ```typescript
-// Add entities
-await plugin.addEntity({
-  name: 'Ethereum',
-  type: 'Cryptocurrency',
-  attributes: { symbol: 'ETH' },
-  confidence: 1.0
-});
+memory_graph_query({
+  question: "Who contributed to the AiraCM dashboard?"
+})
 
-// Generate embeddings
-await plugin.generateEmbeddings();
-
-// Hybrid search (keyword + semantic)
-const results = await plugin.searchHybrid('crypto', 10);
-// Returns: [{entity, score, source: 'keyword'|'semantic'}, ...]
+// Returns:
+// - Aira: built content writer, SEO optimizer
+// - Sếp: designed architecture, deployed infrastructure
 ```
 
-### Temporal Relationships
+### 📚 Research & Learning
+Build a knowledge base from reading material:
 
 ```typescript
-// Alice works at Meta
-await plugin.addRelationship({
-  from: aliceId,
-  to: metaId,
-  type: 'WORKS_AT',
-  attributes: {},
-  confidence: 1.0,
-  validFrom: Date.now()
-});
+memory_graph_ingest({
+  text: "Transformers are neural networks with attention mechanisms...",
+  source: "research-paper"
+})
 
-// Alice moves to Google
-await plugin.supersede(aliceId, 'WORKS_AT', metaId, googleId);
-
-// Query past
-const pastRels = await plugin.queryTemporal(aliceId, pastTimestamp);
-// Returns: Alice -> Meta
-
-// Query present
-const currentRels = await plugin.getRelationships(aliceId);
-// Returns: Alice -> Google
+memory_graph_query({
+  question: "What are transformers used for?"
+})
 ```
 
-### Graph Traversal
+### 💼 Project Management
+Track dependencies and relationships:
 
 ```typescript
-// Find path: Alice -> Bob -> Charlie
-const path = await plugin.findPath(aliceId, charlieId, 3);
-// Returns: [aliceId, bobId, charlieId]
+memory_graph_path({
+  from: "TinGameFi",
+  to: "OpenClaw"
+})
+
+// Returns:
+// TinGameFi -[USES]-> AiraCM -[RUNS_ON]-> OpenClaw
 ```
 
-## API Reference
+---
 
-### Core Operations
+## 🛠️ Configuration
+
+### Full Configuration Schema
+
+```json
+{
+  "dbPath": "~/.openclaw/data/memory-graph.db",
+  "autoIngest": true,
+  "sessionSummary": true,
+  "minConfidence": 0.7,
+  "extractionModel": "",
+  "maxHops": 3,
+  "domains": []
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `dbPath` | `string` | `~/.openclaw/data/memory-graph.db` | SQLite database location |
+| `autoIngest` | `boolean` | `true` | Auto-extract from every inbound message |
+| `sessionSummary` | `boolean` | `true` | Summarize and ingest at session end |
+| `minConfidence` | `number` | `0.7` | Min confidence threshold (0.0-1.0) |
+| `extractionModel` | `string` | `""` | Model for extraction (empty = use default) |
+| `maxHops` | `number` | `3` | Max graph traversal hops for path queries |
+| `domains` | `array` | `[]` | Domain hints for better extraction |
+
+### Domain Hints (Optional)
+
+Improve extraction accuracy for specific domains:
+
+```json
+{
+  "domains": [
+    {
+      "name": "software-development",
+      "entityHints": ["repository", "commit", "pull request", "issue"],
+      "relationHints": ["FIXES", "IMPLEMENTS", "DEPENDS_ON"]
+    }
+  ]
+}
+```
+
+---
+
+## 📊 Tools Reference
+
+### `memory_graph_ingest`
+Manually extract entities from text.
 
 ```typescript
-// Add entity (auto-generates embedding)
-const id = await plugin.addEntity({
-  name: 'Entity Name',
-  type: 'EntityType',
-  attributes: { key: 'value' },
-  confidence: 1.0
-});
-
-// Add relationship
-await plugin.addRelationship({
-  from: entityId1,
-  to: entityId2,
-  type: 'RELATION_TYPE',
-  attributes: {},
-  confidence: 1.0,
-  validFrom: Date.now()
-});
+memory_graph_ingest({
+  text: string,
+  source?: string
+})
 ```
 
-### Search Operations
+### `memory_graph_search`
+Hybrid keyword + semantic search.
 
 ```typescript
-// Keyword search
-const results = await plugin.searchKeyword('query', 10);
-
-// Semantic search (requires embeddings)
-const results = await plugin.searchSemantic('query', 10);
-
-// Hybrid search (recommended)
-const results = await plugin.searchHybrid('query', 10);
+memory_graph_search({
+  query: string,
+  limit?: number,
+  type?: string
+})
 ```
 
-### Conversation Context
+### `memory_graph_query`
+Natural language queries.
 
 ```typescript
-// Add message (auto-extracts entities)
-await plugin.addConversationMessage({
-  role: 'user' | 'assistant',
-  content: 'message text',
-  timestamp: Date.now()
-});
-
-// Get conversation window
-const messages = await plugin.getConversationWindow(10);
-
-// Inject context (use before generating response)
-const context = await plugin.injectContext('query');
-// Returns: {conversationWindow, relevantEntities, graphContext, priority}
+memory_graph_query({
+  question: string
+})
 ```
 
-### Maintenance
+### `memory_graph_path`
+Find shortest path between entities.
 
 ```typescript
-// Generate embeddings for entities without them
-const count = await plugin.generateEmbeddings(20); // batch size
-
-// Decay old entities (reduce confidence)
-await plugin.decay(0.01); // decay rate
-
-// Get stats
-const stats = await plugin.stats();
-// Returns: {entities, relationships, conversations}
+memory_graph_path({
+  from: string,
+  to: string,
+  maxHops?: number
+})
 ```
 
-## Configuration
+### `memory_graph_stats`
+Get database statistics.
 
 ```typescript
-const config = {
-  dbPath: '~/.openclaw/memory-graph.db',
-  embeddingModel: 'Xenova/multilingual-e5-large',
-  conversationWindowSize: 10,
-  maxContextTokens: 2000,
-  enableAutoExtraction: true,
-  contextPriority: ['conversation', 'semantic', 'graph', 'working']
-};
+memory_graph_stats()
 ```
 
-## Testing
+---
+
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -231,116 +348,111 @@ npm test -- --coverage
 npm run test:watch
 ```
 
-### Test Coverage
+**Test Coverage: 100%** ✅
+- Database operations
+- Embedding generation
+- Entity extraction
+- Integration tests
 
-- ✅ Embedding service (multilingual-e5-large)
-- ✅ Database operations (entities, relationships, conversations)
-- ✅ Entity extraction (URLs, prices, decisions, dates)
-- ✅ Hybrid search (keyword + semantic)
-- ✅ Conversation context injection
-- ✅ Temporal relationships
-- ✅ Graph traversal
-- ✅ Pearl OTC scenario (integration test)
+---
 
-## Migration from v0.20.0
+## 🔧 Development
 
-The plugin is backward compatible. Existing databases will work without changes.
-
-### Breaking Changes
-
-None. All v0.20.0 APIs are preserved.
-
-### New Features
-
-- `addConversationMessage()` - Add conversation messages
-- `getConversationWindow()` - Get last N messages
-- `injectContext()` - Inject context before response
-- `extractEntities()` - Extract entities from text
-- `searchHybrid()` - Hybrid keyword + semantic search
-
-### Embedding Model Upgrade
-
-Old: `Xenova/bge-small-en-v1.5` (384d, English only)
-New: `Xenova/multilingual-e5-large` (1024d, multilingual)
-
-Existing embeddings will be regenerated automatically on first use.
-
-## Performance
-
-- **Embedding generation**: ~100ms per entity (batch of 20)
-- **Semantic search**: ~50ms for 1000 entities
-- **Conversation injection**: ~10ms for 10 messages
-- **Database operations**: <5ms per query
-
-## Token Cost
-
-- **Conversation window (10 messages)**: ~500-1000 tokens
-- **Semantic search results (5 entities)**: ~200-500 tokens
-- **Graph context (3 relationships)**: ~100-200 tokens
-- **Total context injection**: ~800-1700 tokens per response
-
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│         MemoryGraphPlugin               │
-├─────────────────────────────────────────┤
-│  - Conversation Window Buffer           │
-│  - Context Injection                    │
-│  - Entity Extraction                    │
-│  - Hybrid Search                        │
-└─────────────────────────────────────────┘
-         │              │              │
-         ▼              ▼              ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  Database    │ │  Embedding   │ │  Extractor   │
-│  (SQLite)    │ │  (E5-Large)  │ │  (Regex)     │
-└──────────────┘ └──────────────┘ └──────────────┘
-```
-
-## Troubleshooting
-
-### Embeddings not working
+### Build
 
 ```bash
-# Regenerate embeddings
-await plugin.generateEmbeddings();
+npm run build
 ```
 
-### Database locked
+### Lint
 
 ```bash
-# Close existing connections
-plugin.close();
+npm run lint
 ```
 
-### Out of memory
+### Project Structure
 
-```bash
-# Reduce batch size
-await plugin.generateEmbeddings(10); // default: 20
+```
+agent-memory-graph/
+├── src/
+│   ├── database.ts          # SQLite operations
+│   ├── embedding.ts         # Semantic embeddings
+│   ├── extractor.ts         # Entity extraction
+│   ├── index.ts             # Main plugin entry
+│   ├── types.ts             # TypeScript types
+│   └── __tests__/           # Test suite
+├── dist/                    # Compiled output
+├── openclaw.plugin.json     # Plugin metadata
+├── package.json
+└── README.md
 ```
 
-## Contributing
+---
 
-1. Fork the repo
-2. Create feature branch
-3. Add tests
-4. Run `npm test`
-5. Submit PR
+## 📈 Performance
 
-## License
+- **Database:** SQLite with FTS5 full-text search
+- **Embedding:** Lazy-loaded Transformers.js (no startup penalty)
+- **Memory:** ~50MB for 1000 entities with embeddings
+- **Speed:** <100ms for most queries, <500ms for complex graph traversal
 
-MIT
+---
 
-## Credits
+## 🤝 Contributing
 
-- Inspired by [Graphiti](https://github.com/getzep/graphiti) temporal knowledge graphs
-- Uses [Xenova/transformers.js](https://github.com/xenova/transformers.js) for embeddings
-- Built for [OpenClaw](https://github.com/openclaw/openclaw)
+Contributions welcome! Please:
 
-## Support
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing`)
+5. Open a Pull Request
 
-- GitHub Issues: https://github.com/openclaw/plugins/issues
-- Discord: https://discord.gg/openclaw
-- Docs: https://docs.openclaw.dev/plugins/memory-graph
+---
+
+## 📝 Changelog
+
+### v0.21.0 (2026-06-02)
+- ✨ **NEW:** Conversation context buffer (10 messages)
+- ✨ **NEW:** Hybrid search (keyword 40% + semantic 60%)
+- ⬆️ **UPGRADE:** Embedding model → multilingual-e5-large (1024d)
+- ✨ **NEW:** Auto-extraction for URLs, prices, mentions
+- 🐛 **FIX:** Entry path correction (dist/index.js)
+- ✅ **TEST:** 100% test coverage
+
+### v0.19.x
+- Initial release
+- Basic entity extraction
+- Semantic search
+- SQLite storage
+
+---
+
+## 📜 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 💬 Support
+
+- 📖 **Documentation:** [GitHub Wiki](https://github.com/LightHaru/agent-memory-graph/wiki)
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/LightHaru/agent-memory-graph/issues)
+- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/LightHaru/agent-memory-graph/discussions)
+
+---
+
+## 🌟 Acknowledgments
+
+Built with:
+- [OpenClaw](https://openclaw.ai) - AI agent framework
+- [Transformers.js](https://huggingface.co/docs/transformers.js) - In-browser ML models
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - Fast SQLite driver
+
+---
+
+<p align="center">
+  <strong>Made with ❤️ by <a href="https://github.com/LightHaru">LightHaru</a></strong>
+  <br>
+  <sub>Powering intelligent agents since 2026</sub>
+</p>
